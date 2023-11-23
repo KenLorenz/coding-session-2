@@ -218,11 +218,107 @@
                     <div class="col-md-8">
                         <div class="card">
                             <div class="header">
-                                <h4 class="title">Users Behavior</h4>
-                                <p class="category">24 Hours performance</p>
+                                <h4 class="title">Top 3 products</h4>
+                                <p class="category">Number of Orders Monthly</p>
                             </div>
                             <div class="content">
-                                <div id="chartHours" class="ct-chart"></div>
+
+                                <canvas id="chartTop3"></canvas>
+                                <?php
+                                
+                                require('config/config.php');
+                                require('config/db.php');
+                                $query_top3 = "SELECT ProductName FROM northwind_appdev.order_details, northwind_appdev.products
+                                WHERE products.ProductID=order_details.ProductID
+                                GROUP BY products.ProductID order by count(*) desc, products.ProductName limit 3;";
+                                
+                                $result_top3 = mysqli_query($conn,$query_top3);
+                                $products_top3 = array();
+                                while ($row = mysqli_fetch_array($result_top3)){
+                                    $products_top3[] = $row['ProductName'];
+                                }
+
+                                mysqli_free_result($result_top3);
+
+                                $Top1_Count = array_fill(0,12,0);
+                                $Top2_Count = array_fill(0,12,0);
+                                $Top3_Count = array_fill(0,12,0);
+
+                                for ($counter=0; $counter<3; $counter++){
+                                    $query02 = "SELECT EXTRACT(MONTH FROM o.OrderDate) as Month_1997,
+                                    p.ProductName, COUNT(*) as num_order
+                                    FROM northwind_appdev.order_details od, northwind_appdev.orders o,
+                                    northwind_appdev.products p
+                                    WHERE o.orderid = od.orderid and p.productid = od.ProductID and
+                                    o.orderdate LIKE '1997%' and
+                                    p.ProductName = '" . $products_top3[$counter] .
+                                    "' GROUP BY p.ProductName, Month_1997
+                                    ORDER BY Month_1997, p.ProductName;";
+
+                                    $result02 = mysqli_query($conn, $query02);
+                                    if(mysqli_num_rows($result02) > 0){
+                                        while ($row = mysqli_fetch_array($result02)){
+                                            if ($counter==0){
+                                                $Top1_Count[$row['Month_1997']] = $row['num_order'];
+                                            } elseif ($counter==1){
+                                                $Top2_Count[$row['Month_1997']] = $row['num_order'];
+                                            } else {
+                                                $Top3_Count[$row['Month_1997']] = $row['num_order'];
+                                            }
+                                        }
+                                    }
+                                }
+                                ?>
+                                <script>
+                                    const Top1_Count = <?php echo json_encode($Top1_Count); ?>;
+                                    const Top2_Count = <?php echo json_encode($Top2_Count); ?>;
+                                    const Top3_Count = <?php echo json_encode($Top3_Count); ?>;
+                                    const label_1 = <?php echo json_encode($products_top3[0]); ?>;
+                                    const label_2 = <?php echo json_encode($products_top3[1]); ?>;
+                                    const label_3 = <?php echo json_encode($products_top3[2]); ?>;
+                                    const data2 = {
+                                            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+                                            'Oct', 'Nov', 'Dec'],
+                                            datasets: [{
+                                            label: label_1,
+                                            data: Top1_Count,
+                                            fill: false,
+                                            backgroundColor: 'rgb(255, 99, 132)',
+                                            borderColor: 'rgb(255, 99, 132)',
+                                            tension: 0.1
+                                        },
+                                        {
+                                            label: label_2,
+                                            data: Top2_Count,
+                                            fill: false,
+                                            backgroundColor: 'rgb(54, 162, 235)',
+                                            borderColor: 'rgb(54, 162, 235)',
+                                            tension: 0.1
+                                        },
+                                        {
+                                            label: label_3,
+                                            data: Top3_Count,
+                                            fill: false,
+                                            backgroundColor: 'rgb(255,165,0)',
+                                            borderColor: 'rgb(255,165,0)',
+                                            tension: 0.1
+                                        }]
+                                    };
+                                    // <!-- config block -->
+                                    const config2 = {
+                                    type: 'line',
+                                    data: data2,
+                                    };
+                                    // <!-- render block -->
+                                    const chartTop3 = new Chart(
+                                    document.getElementById('chartTop3'),
+                                    config2
+                                );
+                                </script>
+
+
+                        
+                                <!-- <div id="chartHours" class="ct-chart"></div>
                                 <div class="footer">
                                     <div class="legend">
                                         <i class="fa fa-circle text-info"></i> Open
@@ -233,7 +329,7 @@
                                     <div class="stats">
                                         <i class="fa fa-history"></i> Updated 3 minutes ago
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>
@@ -245,11 +341,104 @@
                     <div class="col-md-6">
                         <div class="card ">
                             <div class="header">
-                                <h4 class="title">2014 Sales</h4>
-                                <p class="category">All products including Taxes</p>
+                                <h4 class="title">2017 Sales</h4>
+                                <p class="category">All Meat/Poultry and Seafood Products</p>
                             </div>
                             <div class="content">
-                                <div id="chartActivity" class="ct-chart"></div>
+                                <canvas id="chartMeatvsSeafood"></canvas>
+
+                                <?php
+                                
+                                require('config/config.php');
+                                require('config/db.php');
+                                $query03 = "SELECT EXTRACT(MONTH FROM o.orderdate) as Month_1997,
+                                    cat.CategoryName as CategoryName, SUM(od.UnitPrice*od.Quantity*(1-od.Discount))
+                                    as sales
+                                    FROM northwind_appdev.order_details od, northwind_appdev.orders o, northwind_appdev.products
+                                    p, northwind_appdev.categories cat
+                                    WHERE o.orderid = od.orderid and p.productid = od.ProductID AND
+                                    p.CategoryID=cat.CategoryID and
+                                    cat.CategoryName in('Meat/Poultry','Seafood') and o.orderdate LIKE
+                                    '1997%'
+                                    GROUP BY cat.CategoryName, Month_1997
+                                    ORDER BY Month_1997, cat.CategoryName;";
+                                $result03 = mysqli_query($conn, $query03);
+
+                                if(mysqli_num_rows($result03) > 0){
+                                    $Sales_Meat = array();
+                                    $Sales_Seafood = array();
+                                    while ($row = mysqli_fetch_array($result03)){
+                                        if($row['CategoryName']=='Seafood'){
+                                            $Sales_Seafood[] = $row['sales'];
+                                        }else{
+                                            $Sales_Meat[] = $row['sales'];
+                                    }   
+                                }
+
+                                mysqli_free_result($result03);
+                                mysqli_close($conn);
+                                }else{
+                                echo "No records matching your query were found.";
+                                }
+                                
+                                
+                                ?>
+
+                                <script>
+                                    // <!-- setup block -->
+                                const Sales_Meat = <?php echo json_encode($Sales_Meat); ?>;
+                                const Sales_Seafood = <?php echo json_encode($Sales_Seafood); ?>;
+                                const data3 ={
+                                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+                                        'Oct', 'Nov', 'Dec'],
+                                        datasets: [{
+                                        label: 'Meat/Poultry',
+                                        data: Sales_Meat,
+                                        backgroundColor: [
+                                            'rgb(255, 99, 132)'
+                                        ],
+                                        borderColor: [
+                                            'rgb(255, 99, 132)'
+                                        ],
+                                        borderWidth: 1
+                                    },
+                                    {
+                                        label: 'SeaFood',
+                                        data: Sales_Seafood,
+                                        backgroundColor: [
+                                        'rgb(54, 162, 235)'
+                                        ],
+                                        borderColor: [
+                                        'rgb(54, 162, 235)'
+                                        ],
+                                        borderWidth: 1
+                                    }]
+                                };
+                                // <!-- config block -->
+                                const config3 = {
+                                    type: 'bar',
+                                    data: data3,
+                                    options: {
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true
+                                            }
+                                        }
+                                    }
+                                };
+
+                                // <!-- render block -->
+                                const chartMeatvsSeafood = new Chart(
+                                    document.getElementById('chartMeatvsSeafood'),
+                                    config3
+                                );
+                                </script>
+
+
+                    
+
+
+                                <!-- <div id="chartActivity" class="ct-chart"></div>
 
                                 <div class="footer">
                                     <div class="legend">
@@ -260,11 +449,97 @@
                                     <div class="stats">
                                         <i class="fa fa-check"></i> Data information certified
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>
+                    
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="header">
+                                <h4 class="title">Top 5 Ordered Products</h4>
+                                <p class="category">Products</p>
+                            </div>
+                            <div class="content">
+                                <canvas id="myChartTopFive"></canvas>
 
+
+                                <?php
+                                require('config/config.php');
+                                require('config/db.php');
+                                $query04 = "SELECT ProductName, count(*) as order_count FROM
+                                    northwind_appdev.order_details, northwind_appdev.products WHERE
+                                    products.ProductID=order_details.ProductID GROUP BY products.ProductID order by
+                                    order_count desc, products.Productname limit 5;";
+                                $result04 = mysqli_query($conn, $query04);
+
+                                if(mysqli_num_rows($result04) > 0){
+                                    $order_count = array();
+                                    $label_barchart = array();
+                                    while ($row = mysqli_fetch_array($result04)){
+                                        $order_count[] = $row['order_count'];
+                                        $label_barchart[] = $row['ProductName'];
+                                    }
+
+                                    mysqli_free_result($result04);
+                                    mysqli_close($conn);
+                                }else{
+                                    echo "No records matching your query were found.";
+                                }
+                                
+                                ?>
+
+                                <script>
+                                
+                                const label_barchart = <?php echo json_encode($label_barchart); ?>;
+                                const data4 ={
+                                    labels: label_barchart,
+                                    datasets: [{
+                                        label: 'Number of Orders',
+                                        data: order_count,
+                                        backgroundColor: [
+                                            'rgba(255, 99, 132, 0.2)',
+                                            'rgba(54, 162, 235, 0.2)',
+                                            'rgba(255, 206, 86, 0.2)',
+                                            'rgba(75, 192, 192, 0.2)',
+                                            'rgba(153, 102, 255, 0.2)',
+                                            'rgba(255, 159, 64, 0.2)'
+                                        ],
+                                        borderColor: [
+                                            'rgba(255, 99, 132, 1)',
+                                            'rgba(54, 162, 235, 1)',
+                                            'rgba(255, 206, 86, 1)',
+                                            'rgba(75, 192, 192, 1)',
+                                            'rgba(153, 102, 255, 1)',
+                                            'rgba(255, 159, 64, 1)'
+                                        ],
+                                        borderWidth: 1
+                                    }]
+                                };
+                                // <!-- config block -->
+                                const config4 = {
+                                    type: 'bar',
+                                    data: data4,
+                                    options: {
+                                        scales: {
+                                            y: {
+                                                beginAtZero: true
+                                            }
+                                        }
+                                    }
+                                };
+                                // <!-- render block -->
+                                const myChartTopFive = new Chart(
+                                    document.getElementById('myChartTopFive'),
+                                    config4
+                                );
+
+                                </script>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                     <div class="col-md-6">
                         <div class="card ">
                             <div class="header">
