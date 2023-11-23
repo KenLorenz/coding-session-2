@@ -4,7 +4,9 @@
 	<meta charset="utf-8" />
 	<link rel="icon" type="image/png" href="assets/img/favicon.ico">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
-
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js">
+    </script>
 	<title>Light Bootstrap Dashboard by Creative Tim</title>
 
 	<meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
@@ -42,65 +44,9 @@
         Tip 2: you can also add an image using data-image tag
 
     -->
+        <?php include('includes/sidebar.php') ?>
 
-    	<div class="sidebar-wrapper">
-            <div class="logo">
-                <a href="http://www.creative-tim.com" class="simple-text">
-                    Creative Tim
-                </a>
-            </div>
-
-            <ul class="nav">
-                <li class="active">
-                    <a href="dashboard.html">
-                        <i class="pe-7s-graph"></i>
-                        <p>Dashboard</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="user.html">
-                        <i class="pe-7s-user"></i>
-                        <p>User Profile</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="table.html">
-                        <i class="pe-7s-note2"></i>
-                        <p>Table List</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="typography.html">
-                        <i class="pe-7s-news-paper"></i>
-                        <p>Typography</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="icons.html">
-                        <i class="pe-7s-science"></i>
-                        <p>Icons</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="maps.html">
-                        <i class="pe-7s-map-marker"></i>
-                        <p>Maps</p>
-                    </a>
-                </li>
-                <li>
-                    <a href="notifications.html">
-                        <i class="pe-7s-bell"></i>
-                        <p>Notifications</p>
-                    </a>
-                </li>
-				<li class="active-pro">
-                    <a href="upgrade.html">
-                        <i class="pe-7s-rocket"></i>
-                        <p>Upgrade to PRO</p>
-                    </a>
-                </li>
-            </ul>
-    	</div>
+    	
     </div>
 
     <div class="main-panel">
@@ -191,13 +137,70 @@
                         <div class="card">
 
                             <div class="header">
-                                <h4 class="title">Email Statistics</h4>
-                                <p class="category">Last Campaign Performance</p>
+                                <h4 class="title">Shippers Statistics</h4>
+                                <p class="category">Orders Shipped by every Shipper</p>
                             </div>
                             <div class="content">
-                                <div id="chartPreferences" class="ct-chart ct-perfect-fourth"></div>
 
-                                <div class="footer">
+                            <canvas id="chartShippers"></canvas>
+                            
+                            <?php
+                                include('config/config.php');
+                                include('config/db.php');
+
+                                $query01 = "SELECT shippers.CompanyName, (Count(*)/(SELECT COUNT(*) FROM northwind_appdev.orders) * 100)
+                                as Count_Orders FROM northwind_appdev.orders, northwind_appdev.shippers WHERE shippers.ShipperID=orders.ShipVia GROUP BY orders.ShipVia;";
+
+                                $result01 = mysqli_query($conn, $query01);
+
+                                if(mysqli_num_rows($result01) > 0) {
+                                    $Count_Orders = array();
+                                    $label_piechart = array();
+                                    while($row = mysqli_fetch_array($result01)){
+                                        $Count_Orders[] = $row['Count_Orders'];
+                                        $label_piechart[] = $row['CompanyName'];
+                                    }
+
+                                    mysqli_free_result($result01);
+                                    mysqli_close($conn);
+                                }else{
+                                    echo "No records matching your query were found.";
+                                }
+
+                            ?>
+                            <script>
+                                const Count_Orders = <?php echo json_encode($Count_Orders); ?>;
+                                const label_piechart = <?php echo json_encode($label_piechart); ?>;
+                                const data1 = {
+                                    labels: label_piechart,
+                                    datasets: [{
+                                        label: 'My First Dataset',
+                                        data: Count_Orders,
+                                        backgroundColor: [
+                                            'rgb(255,99,132)',
+                                            'rgb(54,162,235)',
+                                            'rgb(255,165,0)',
+                                        ],
+                                        hoverOffset: 4
+                                    }]
+                                };
+
+                                const config = {
+                                    type: 'pie',
+                                    data: data1,
+                                };
+
+                                const chartShippers = new Chart(
+                                    document.getElementById('chartShippers'),
+                                    config
+                                );
+                            </script>
+
+
+
+                                <!-- <div id="chartPreferences" class="ct-chart ct-perfect-fourth"></div> -->
+
+                                <!-- <div class="footer">
                                     <div class="legend">
                                         <i class="fa fa-circle text-info"></i> Open
                                         <i class="fa fa-circle text-danger"></i> Bounce
@@ -207,7 +210,7 @@
                                     <div class="stats">
                                         <i class="fa fa-clock-o"></i> Campaign sent 2 days ago
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>
