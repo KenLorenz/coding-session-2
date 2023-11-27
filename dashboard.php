@@ -493,7 +493,8 @@
                                 <script>
                                 
                                 const label_barchart = <?php echo json_encode($label_barchart); ?>;
-                                const data4 ={
+                                const order_count = <?php echo json_encode($order_count); ?>;
+                                const data4 = {
                                     labels: label_barchart,
                                     datasets: [{
                                         label: 'Number of Orders',
