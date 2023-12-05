@@ -346,7 +346,7 @@
                             };
 
                             const config3 = {
-                                type: 'bar',
+                                type: 'doughnut',
                                 data: data3,
                                 options: {
                                     indexAxis: 'y',
